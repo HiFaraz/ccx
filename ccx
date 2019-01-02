@@ -8,88 +8,39 @@
 #
 # License: MIT
 
-NAME=$1
-ARGS=${@:2}
+if [ "${1}" = "--verbose" ] || [ "${1}" = "-v" ]; then
+  VERBOSE="true"
+  NAME="${2}"
+  ARGS="${@:3}"
+else
+  VERBOSE="false"
+  NAME="${1}"
+  ARGS="${@:2}"
+fi
 
 # print usage information
-if [ ! $NAME ];then
-  echo "Usage: ccx <filepath> [<args>]"
-  echo "ccx $BASH_SOURCE"
+if [ ! "${NAME}" ]; then
+  echo "ccx is a tool for running simple C++ files
+
+Usage: ccx <filepath> [<args>]"
   exit 0
 fi
 
-CLEAR='\033[0m'
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-
 TEMP_FILE="$(mktemp)"
 
-function write() {
-  echo -e "$1$2${CLEAR}"
+function info() {
+  [ "${VERBOSE}" = "true" ] && >&2 echo ${@}
 }
 
-function teardown() {
-  # discard the executable
-  rm -f $TEMP_FILE
-  if [ $? -ne 0 ];then
-    write $RED "could not delete ${TEMP_FILE}"
-  fi
-  exit $1
-}
+info "Compile."
+g++ -g -Wall -o "${TEMP_FILE}" "${NAME}"
 
-function error() {
-  write $RED "$2 (exit code $1)"
-  teardown $1
-}
+info "Configure permissions."
+chmod +x "${TEMP_FILE}"
 
-function try() {
-  local OPTIND=1
+info "Execute."
+info "Preview:" "${NAME}" "${ARGS}"
+"${TEMP_FILE}" ${ARGS}
 
-  while getopts ":c:s:e:" opt; do
-    case $opt in
-      c)
-        local COMMAND=$OPTARG
-        ;;
-      s)
-        local SUCCESS_MESSAGE=$OPTARG
-        ;;
-      e)
-        local ERROR_MESSAGE=$OPTARG
-        ;;
-      \?)
-        echo "Invalid option: -$OPTARG" >&2
-        exit 1
-        ;;
-      :)
-        echo "Option -$OPTARG requires an argument." >&2
-        exit 1
-        ;;
-    esac
-  done
-
-  eval "$COMMAND"
-  STATUS=$?
-
-  if [ $STATUS -ne 0 ];then
-    error $STATUS "$ERROR_MESSAGE"
-  elif [ $SUCCESS_MESSAGE ];then
-    echo "$SUCCESS_MESSAGE"
-  fi
-}
-
-try \
-  -c "g++ -g -Wall -o $TEMP_FILE $NAME" \
-  -s "compiled" \
-  -e "could not compile"
-  
-try \
-  -c "chmod +x $TEMP_FILE" \
-  -e "could not set permissions to execute ${TEMP_FILE}"
-
-echo "\"$NAME $ARGS\""
-try \
-  -c "${TEMP_FILE} $ARGS" \
-  -e "program errored"
-
-write $GREEN "success"
-teardown 0
+info "Clean up."
+rm -f "${TEMP_FILE}"
