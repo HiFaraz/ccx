@@ -4,7 +4,7 @@ Test small C++ files quickly
 ## Usage
 
 ```
-$ ccx <filepath> [<args>]
+$ ccx [-v, --verbose] <filepath> [<args>]
 ```
 
 ## Author
