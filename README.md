@@ -1,5 +1,5 @@
 # ccx
-Test small C++ files quickly
+Run small C++ files quickly
 
 ## Usage
 
